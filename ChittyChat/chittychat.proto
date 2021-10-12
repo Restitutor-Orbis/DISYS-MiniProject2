@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package time;
+package chittychat;
 
-option go_package = "https://github.com/Restitutor-Orbis/DISYS-MiniProject2;time";
+option go_package = "https://github.com/Restitutor-Orbis/DISYS-MiniProject2;chittychat";
 
 service ChittyChat {
     rpc Publish (PublishMessage) returns (PublishReply);
