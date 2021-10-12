@@ -4,15 +4,13 @@ package chittychat;
 
 option go_package = "https://github.com/Restitutor-Orbis/DISYS-MiniProject2;chittychat";
 
-service ChittyChat {
-    rpc Publish (PublishMessage) returns (PublishReply);
+service getCurrentTime {
+    rpc getTime (GetTimeRequest) returns (GetTimeReply) {}
 }
 
-message PublishMessage {
-    string message = 1;
-}
+message GetTimeRequest {}
 
-message PublishReply {
+message GetTimeReply {
     string reply = 1;
 }
 
