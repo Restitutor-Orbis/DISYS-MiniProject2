@@ -11,6 +11,6 @@ COPY go.sum /build/
 RUN cd /build/ && git clone https://github.com/Restitutor-Orbis/DISYS-MiniProject2.git
 RUN cd /build/DISYS-MiniProject2/server && go build ./...
 
-EXPOSE 9080
+EXPOSE 8080
 
 ENTRYPOINT [ "/build/DISYS-MiniProject2/server/server" ]
