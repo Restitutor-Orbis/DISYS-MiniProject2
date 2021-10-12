@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package time;
+
+option go_package = "https://github.com/Restitutor-Orbis/DISYS-MiniProject2;time";
+
+service ChittyChat {
+    rpc Publish (PublishMessage) returns (PublishReply);
+}
+
+message PublishMessage {
+    string message = 1;
+}
+
+message PublishReply {
+    string reply = 1;
+}
+
+
