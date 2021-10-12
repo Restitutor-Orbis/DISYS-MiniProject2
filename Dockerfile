@@ -9,7 +9,7 @@ COPY go.mod /build
 COPY go.sum /build/
 
 RUN cd /build/ && git clone https://github.com/Restitutor-Orbis/DISYS-MiniProject2.git
-RUN go build -o DISYS-MiniProject2
+RUN go build -o DISYS-MiniProject2/server
 
 EXPOSE 9080
 
