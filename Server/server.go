@@ -12,15 +12,19 @@ import (
 )
 
 type Server struct {
+	//cc.ChittyChatServer
 	cc.UnimplementedChittyChatServer
 }
 
-func (s *Server) PublishMessage(ctx context.Context, in *cc.PublishMessage) (*cc.PublishReply, error) {
-	fmt.Printf("Received GetTime request\n")
-	return &cc.PublishReply{Reply: "test"}, nil
+func (s *Server) Publish(ctx context.Context, in *cc.PublishMessage) (*cc.PublishReply, error) {
+	fmt.Printf("Received PublishMessage request\n")
+	var message string = in.Message
+	return &cc.PublishReply{Reply: message}, nil
 }
 
 func main() {
+	fmt.Println("Starting server")
+
 	// Create listener tcp on port 9080
 	list, err := net.Listen("tcp", ":9080")
 	if err != nil {

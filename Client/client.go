@@ -25,6 +25,9 @@ func main() {
 	//  Create new Client from generated gRPC code from proto
 	c := cc.NewChittyChatClient(conn)
 
+	fmt.Println("")
+	fmt.Println("---")
+
 	for {
 		SendPublishRequest(c)
 		t.Sleep(5 * t.Second)
@@ -33,12 +36,12 @@ func main() {
 
 func SendPublishRequest(c cc.ChittyChatClient) {
 	// Between the curly brackets are nothing, because the .proto file expects no input.
-	message := cc.PublishMessage{}
+	message := cc.PublishMessage{Message: "hej"}
 
 	response, err := c.Publish(context.Background(), &message)
 	if err != nil {
-		log.Fatalf("Error when calling GetTime: %s", err)
+		log.Fatalf("Error when calling Publish: %s", err)
 	}
 
-	fmt.Printf("Current time right now: %s\n", response.Reply)
+	fmt.Printf("Message recieved: %s\n", response.Reply)
 }

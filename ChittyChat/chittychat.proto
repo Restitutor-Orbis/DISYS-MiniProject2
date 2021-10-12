@@ -5,7 +5,7 @@ package chittychat;
 option go_package = "https://github.com/Restitutor-Orbis/DISYS-MiniProject2;chittychat";
 
 service ChittyChat {
-    rpc Publish (PublishMessage) returns (PublishReply);
+    rpc Publish(PublishMessage) returns (PublishReply);
 }
 
 message PublishMessage {
