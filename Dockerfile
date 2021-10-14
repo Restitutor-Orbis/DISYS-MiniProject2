@@ -13,4 +13,4 @@ RUN cd /build/DISYS-MiniProject2/server/ && go build ./...
 
 EXPOSE 9080
 
-ENTRYPOINT [ "/build/DISYS-MiniProject2/server/server.go" ]
+ENTRYPOINT [ "/build/DISYS-MiniProject2/server/server" ]
