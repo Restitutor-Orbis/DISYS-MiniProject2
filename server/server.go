@@ -7,7 +7,7 @@ import (
 	"net"
 	t "time"
 
-	"github.com/Restitutor-Orbis/DISYS-MiniProject2/ChittyChat"
+	chittychat "github.com/Restitutor-Orbis/DISYS-MiniProject2/ChittyChat"
 
 	"google.golang.org/grpc"
 )
