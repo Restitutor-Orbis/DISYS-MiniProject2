@@ -44,10 +44,6 @@ func (s *Server) Publish(ctx context.Context, in *chittychat.PublishRequest) (*c
 	return &chittychat.PublishReply{}, nil
 }
 
-func (s *Server) Broadcast(stream chittychat.Cha) error {
-
-}
-
 /* func (s *Server) Broadcast(ctx context.Context, in *chittychat.BroadcastRequest) (*chittychat.BroadcastReply, error) {
 	fmt.Println("Sending message from", in.User, "to")
 
