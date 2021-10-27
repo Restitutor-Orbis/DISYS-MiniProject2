@@ -27,8 +27,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to listen on port 9080: %v", err)
 	}
+
 	grpcServer := grpc.NewServer()
 	chittychat.RegisterGetCurrentTimeServer(grpcServer, &Server{})
+
+	fmt.Println("Server is set up on port 9080")
 
 	if err := grpcServer.Serve(list); err != nil {
 		log.Fatalf("failed to server %v", err)
