@@ -19,7 +19,8 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ChittyChatClient interface {
 	Publish(ctx context.Context, in *PublishRequest, opts ...grpc.CallOption) (*PublishReply, error)
-	Broadcast(ctx context.Context, in *BroadcastRequest, opts ...grpc.CallOption) (*BroadcastReply, error)
+	Broadcast(ctx context.Context, opts ...grpc.CallOption) (ChittyChat_BroadcastClient, error)
+	CreateUser(ctx context.Context, in *CreateUserRequest, opts ...grpc.CallOption) (*CreateUserReply, error)
 }
 
 type chittyChatClient struct {
@@ -39,9 +40,40 @@ func (c *chittyChatClient) Publish(ctx context.Context, in *PublishRequest, opts
 	return out, nil
 }
 
-func (c *chittyChatClient) Broadcast(ctx context.Context, in *BroadcastRequest, opts ...grpc.CallOption) (*BroadcastReply, error) {
-	out := new(BroadcastReply)
-	err := c.cc.Invoke(ctx, "/chittychat.ChittyChat/Broadcast", in, out, opts...)
+func (c *chittyChatClient) Broadcast(ctx context.Context, opts ...grpc.CallOption) (ChittyChat_BroadcastClient, error) {
+	stream, err := c.cc.NewStream(ctx, &ChittyChat_ServiceDesc.Streams[0], "/chittychat.ChittyChat/Broadcast", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &chittyChatBroadcastClient{stream}
+	return x, nil
+}
+
+type ChittyChat_BroadcastClient interface {
+	Send(*BroadcastRequest) error
+	Recv() (*BroadcastReply, error)
+	grpc.ClientStream
+}
+
+type chittyChatBroadcastClient struct {
+	grpc.ClientStream
+}
+
+func (x *chittyChatBroadcastClient) Send(m *BroadcastRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *chittyChatBroadcastClient) Recv() (*BroadcastReply, error) {
+	m := new(BroadcastReply)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *chittyChatClient) CreateUser(ctx context.Context, in *CreateUserRequest, opts ...grpc.CallOption) (*CreateUserReply, error) {
+	out := new(CreateUserReply)
+	err := c.cc.Invoke(ctx, "/chittychat.ChittyChat/CreateUser", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +85,8 @@ func (c *chittyChatClient) Broadcast(ctx context.Context, in *BroadcastRequest, 
 // for forward compatibility
 type ChittyChatServer interface {
 	Publish(context.Context, *PublishRequest) (*PublishReply, error)
-	Broadcast(context.Context, *BroadcastRequest) (*BroadcastReply, error)
+	Broadcast(ChittyChat_BroadcastServer) error
+	CreateUser(context.Context, *CreateUserRequest) (*CreateUserReply, error)
 	mustEmbedUnimplementedChittyChatServer()
 }
 
@@ -64,8 +97,11 @@ type UnimplementedChittyChatServer struct {
 func (UnimplementedChittyChatServer) Publish(context.Context, *PublishRequest) (*PublishReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Publish not implemented")
 }
-func (UnimplementedChittyChatServer) Broadcast(context.Context, *BroadcastRequest) (*BroadcastReply, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Broadcast not implemented")
+func (UnimplementedChittyChatServer) Broadcast(ChittyChat_BroadcastServer) error {
+	return status.Errorf(codes.Unimplemented, "method Broadcast not implemented")
+}
+func (UnimplementedChittyChatServer) CreateUser(context.Context, *CreateUserRequest) (*CreateUserReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateUser not implemented")
 }
 func (UnimplementedChittyChatServer) mustEmbedUnimplementedChittyChatServer() {}
 
@@ -98,20 +134,46 @@ func _ChittyChat_Publish_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ChittyChat_Broadcast_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(BroadcastRequest)
+func _ChittyChat_Broadcast_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(ChittyChatServer).Broadcast(&chittyChatBroadcastServer{stream})
+}
+
+type ChittyChat_BroadcastServer interface {
+	Send(*BroadcastReply) error
+	Recv() (*BroadcastRequest, error)
+	grpc.ServerStream
+}
+
+type chittyChatBroadcastServer struct {
+	grpc.ServerStream
+}
+
+func (x *chittyChatBroadcastServer) Send(m *BroadcastReply) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *chittyChatBroadcastServer) Recv() (*BroadcastRequest, error) {
+	m := new(BroadcastRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func _ChittyChat_CreateUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateUserRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ChittyChatServer).Broadcast(ctx, in)
+		return srv.(ChittyChatServer).CreateUser(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/chittychat.ChittyChat/Broadcast",
+		FullMethod: "/chittychat.ChittyChat/CreateUser",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ChittyChatServer).Broadcast(ctx, req.(*BroadcastRequest))
+		return srv.(ChittyChatServer).CreateUser(ctx, req.(*CreateUserRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -128,10 +190,17 @@ var ChittyChat_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ChittyChat_Publish_Handler,
 		},
 		{
-			MethodName: "Broadcast",
-			Handler:    _ChittyChat_Broadcast_Handler,
+			MethodName: "CreateUser",
+			Handler:    _ChittyChat_CreateUser_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "Broadcast",
+			Handler:       _ChittyChat_Broadcast_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+	},
 	Metadata: "chittychat.proto",
 }
