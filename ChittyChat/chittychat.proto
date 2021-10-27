@@ -24,7 +24,11 @@ message BroadcastRequest {
     string time = 3;
 }
 
-message BroadcastReply {}
+message BroadcastReply {
+    string user = 1;
+    string message = 2;
+    string time = 3;
+}
 
 message CreateUserRequest {
     string username = 1;
