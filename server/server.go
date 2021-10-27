@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net"
-	t "time"
 
 	chittychat "github.com/Restitutor-Orbis/DISYS-MiniProject2/chittychat"
 
@@ -13,13 +12,11 @@ import (
 )
 
 type Server struct {
-	chittychat.UnimplementedGetCurrentTimeServer
+	chittychat.UnimplementedChittyChatServer
 }
 
-func (s *Server) GetTime(ctx context.Context, in *chittychat.GetTimeRequest) (*chittychat.GetTimeReply, error) {
-	fmt.Printf("Received get time request")
-	return &chittychat.GetTimeReply{Reply: t.Now().String()}, nil
-}
+//init new map to track users
+var userIDtoNameMap map[int]string = make(map[int]string)
 
 func main() {
 	// Create listener tcp on port 9080
@@ -29,11 +26,44 @@ func main() {
 	}
 
 	grpcServer := grpc.NewServer()
-	chittychat.RegisterGetCurrentTimeServer(grpcServer, &Server{})
+	chittychat.RegisterChittyChatServer(grpcServer, &Server{})
 
 	fmt.Println("Server is set up on port 9080")
 
 	if err := grpcServer.Serve(list); err != nil {
 		log.Fatalf("failed to server %v", err)
 	}
+}
+
+func addClientToMap(name string) {
+
+	var id int
+
+	//check if user already exists
+	for key := range userIDtoNameMap {
+		if userIDtoNameMap[key] == name {
+			//stop function if username already exists
+			return
+		}
+	}
+
+	//set id index to length
+	id = len(userIDtoNameMap)
+
+	//add to map
+	userIDtoNameMap[id] = name
+}
+
+func (s *Server) Publish(ctx context.Context, in *chittychat.PublishRequest) (*chittychat.PublishReply, error) {
+	fmt.Println("Received PublishRequest from", in.User)
+
+	addClientToMap(in.User)
+
+	return &chittychat.PublishReply{}, nil
+}
+
+func (s *Server) Broadcast(ctx context.Context, in *chittychat.BroadcastRequest) (*chittychat.BroadcastReply, error) {
+	fmt.Println("Sending message from", in.User, "to")
+
+	return &chittychat.BroadcastReply{}, nil
 }
