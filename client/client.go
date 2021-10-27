@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"google.golang.org/grpc"
@@ -42,6 +43,23 @@ func SendRequest(client chittychat.ChittyChatClient) {
 	client.Publish(context.Background(), &message)
 }
 
-func PrintBroadcast(request chittychat.BroadcastRequest) {
+func PrintBroadcasts(client chittychat.ChittyChatClient, request chittychat.BroadcastRequest, id int32) {
+	clientMessage := chittychat.BroadcastRequest{
+		UserId: id,
+	}
 
+	stream, err := client.Broadcast(context.Background(), &clientMessage)
+	if err != nil {
+		log.Fatalf("open stream error %v", err)
+	}
+
+	for {
+		requestToPrint, err := stream.Recv()
+
+		if err != nil {
+			log.Fatalf("cannot receive %v", err)
+		}
+
+		fmt.Println(requestToPrint.User, requestToPrint.Message, requestToPrint.Time)
+	}
 }
