@@ -1,3 +1,3 @@
 # DISYS-MiniProject2
 
-test
+guide: https://www.freecodecamp.org/news/grpc-server-side-streaming-with-go/
