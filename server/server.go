@@ -35,6 +35,25 @@ func main() {
 	}
 }
 
+func (s *Server) Publish(ctx context.Context, in *chittychat.PublishRequest) (*chittychat.PublishReply, error) {
+
+	fmt.Println("Received PublishRequest from", in.User)
+
+	addClientToMap(in.User)
+
+	return &chittychat.PublishReply{}, nil
+}
+
+func (s *Server) Broadcast(stream chittychat.Cha) error {
+
+}
+
+/* func (s *Server) Broadcast(ctx context.Context, in *chittychat.BroadcastRequest) (*chittychat.BroadcastReply, error) {
+	fmt.Println("Sending message from", in.User, "to")
+
+	return &chittychat.BroadcastReply{}, nil
+} */
+
 func addClientToMap(name string) {
 
 	var id int
@@ -49,21 +68,8 @@ func addClientToMap(name string) {
 
 	//set id index to length
 	id = len(userIDtoNameMap)
+	fmt.Println("User", name, "added to client")
 
 	//add to map
 	userIDtoNameMap[id] = name
-}
-
-func (s *Server) Publish(ctx context.Context, in *chittychat.PublishRequest) (*chittychat.PublishReply, error) {
-	fmt.Println("Received PublishRequest from", in.User)
-
-	addClientToMap(in.User)
-
-	return &chittychat.PublishReply{}, nil
-}
-
-func (s *Server) Broadcast(ctx context.Context, in *chittychat.BroadcastRequest) (*chittychat.BroadcastReply, error) {
-	fmt.Println("Sending message from", in.User, "to")
-
-	return &chittychat.BroadcastReply{}, nil
 }
