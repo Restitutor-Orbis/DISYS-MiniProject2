@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"sync"
+
+	t "time"
 
 	chittychat "github.com/Restitutor-Orbis/DISYS-MiniProject2/chittychat"
 
@@ -15,12 +18,14 @@ type Server struct {
 	chittychat.UnimplementedChittyChatServer
 }
 
+var sliceOfStreams []chittychat.ChittyChat_BroadcastServer
+
 //init new map to track users
-var userIDtoNameMap map[int]string = make(map[int]string)
+//var userIDtoNameMap map[int]string = make(map[int]string)
 
 func main() {
 	// Create listener tcp on port 9080
-	list, err := net.Listen("tcp", ":9080")
+	list, err := net.Listen("tcp", ":9081")
 	if err != nil {
 		log.Fatalf("Failed to listen on port 9080: %v", err)
 	}
@@ -39,18 +44,61 @@ func (s *Server) Publish(ctx context.Context, in *chittychat.PublishRequest) (*c
 
 	fmt.Println("Received PublishRequest from", in.User)
 
-	addClientToMap(in.User)
+	//addClientToMap(in.User)
+
+	BroadcastToAllClients(in)
 
 	return &chittychat.PublishReply{}, nil
 }
 
-/* func (s *Server) Broadcast(ctx context.Context, in *chittychat.BroadcastRequest) (*chittychat.BroadcastReply, error) {
-	fmt.Println("Sending message from", in.User, "to")
+func (s *Server) Broadcast(in *chittychat.BroadcastRequest, broadcastServer chittychat.ChittyChat_BroadcastServer) error {
+	fmt.Println("Initializing", in.UserId)
 
-	return &chittychat.BroadcastReply{}, nil
-} */
+	message := chittychat.BroadcastReply{
+		User:    "Bo",
+		Message: "has joined",
+		Time:    t.Now().GoString(),
+	}
 
-func addClientToMap(name string) {
+	sliceOfStreams = append(sliceOfStreams, broadcastServer)
+
+	fmt.Println("Added stream to server")
+
+	broadcastServer.Send(&message)
+
+	return nil
+}
+
+func BroadcastToAllClients(message *chittychat.PublishRequest) {
+
+	var mutex = &sync.Mutex{}
+
+	fmt.Println("Broadcasting to", len(sliceOfStreams), "people")
+
+	broadcastReply := chittychat.BroadcastReply{
+		User:    "Jens",
+		Message: "lolol",
+		Time:    "i dag",
+	}
+
+	fmt.Println("Set up message")
+
+	//send message to every known stream
+	for i := range sliceOfStreams {
+
+		mutex.Lock()
+
+		sliceOfStreams[i].Send(&broadcastReply)
+
+		mutex.Unlock()
+
+		fmt.Println(sliceOfStreams[i])
+
+		fmt.Println("Sending message to user", i)
+	}
+}
+
+/* func addClientToMap(name string) {
 
 	var id int
 
@@ -69,3 +117,4 @@ func addClientToMap(name string) {
 	//add to map
 	userIDtoNameMap[id] = name
 }
+*/
