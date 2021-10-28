@@ -67,13 +67,45 @@ func (s *Server) Broadcast(in *chittychat.BroadcastRequest, broadcastServer chit
 		Time:    t.Now().Format("15:04:05"),
 	}
 
+	//save this stream
+	//this should maybe be handled in a separate go routine, to prevent the server from being killed off?
 	sliceOfStreams = append(sliceOfStreams, broadcastServer)
 
 	fmt.Println("Added stream to server")
 
 	broadcastServer.Send(&message)
 
-	return nil
+	//prevent function from terminating
+	//keeps the stream connection alive
+	for {
+
+	}
+}
+
+func StoreClientStream(broadcastServer chittychat.ChittyChat_BroadcastServer) {
+	sliceOfStreams = append(sliceOfStreams, broadcastServer)
+
+	fmt.Println("Added", broadcastServer, "to slice")
+
+	broadcastReply := chittychat.BroadcastReply{
+		User:    "Jens",
+		Message: "Sendt fra StoreClientStream",
+		Time:    t.Now().Format("15:04:05"),
+	}
+
+	//broadcastServer.Send(&broadcastReply)
+
+	for i, v := range sliceOfStreams {
+
+		//mutex.Lock()
+
+		sliceOfStreams[i].Send(&broadcastReply)
+		//fmt.Println(sliceOfStreams[i].Context())
+
+		//mutex.Unlock()
+
+		fmt.Println(i, v)
+	}
 }
 
 func BroadcastToAllClients(message *chittychat.PublishRequest) {
@@ -89,11 +121,11 @@ func BroadcastToAllClients(message *chittychat.PublishRequest) {
 	}
 
 	//send message to every known stream
-	for i := range sliceOfStreams {
+	for i, v := range sliceOfStreams {
 
 		//mutex.Lock()
 
-		sliceOfStreams[i].Send(&broadcastReply)
+		v.Send(&broadcastReply)
 		//fmt.Println(sliceOfStreams[i].Context())
 
 		//mutex.Unlock()
@@ -101,24 +133,3 @@ func BroadcastToAllClients(message *chittychat.PublishRequest) {
 		fmt.Println("Sending message to user", i)
 	}
 }
-
-/* func addClientToMap(name string) {
-
-	var id int
-
-	//check if user already exists
-	for key := range userIDtoNameMap {
-		if userIDtoNameMap[key] == name {
-			//stop function if username already exists
-			return
-		}
-	}
-
-	//set id index to length
-	id = len(userIDtoNameMap)
-	fmt.Println("User", name, "added to client")
-
-	//add to map
-	userIDtoNameMap[id] = name
-}
-*/
