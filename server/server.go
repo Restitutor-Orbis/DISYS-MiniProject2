@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"sync"
+
+	//"sync"
 
 	t "time"
 
@@ -38,6 +39,12 @@ func main() {
 	if err := grpcServer.Serve(list); err != nil {
 		log.Fatalf("failed to server %v", err)
 	}
+
+	//grpc listen and serve
+	err = grpcServer.Serve(list)
+	if err != nil {
+		log.Fatalf("Failed to start gRPC Server :: %v", err)
+	}
 }
 
 func (s *Server) Publish(ctx context.Context, in *chittychat.PublishRequest) (*chittychat.PublishReply, error) {
@@ -57,7 +64,7 @@ func (s *Server) Broadcast(in *chittychat.BroadcastRequest, broadcastServer chit
 	message := chittychat.BroadcastReply{
 		User:    "Bo",
 		Message: "has joined",
-		Time:    t.Now().GoString(),
+		Time:    t.Now().Format("15:04:05"),
 	}
 
 	sliceOfStreams = append(sliceOfStreams, broadcastServer)
@@ -71,28 +78,25 @@ func (s *Server) Broadcast(in *chittychat.BroadcastRequest, broadcastServer chit
 
 func BroadcastToAllClients(message *chittychat.PublishRequest) {
 
-	var mutex = &sync.Mutex{}
+	//var mutex = &sync.Mutex{}
 
 	fmt.Println("Broadcasting to", len(sliceOfStreams), "people")
 
 	broadcastReply := chittychat.BroadcastReply{
-		User:    "Jens",
-		Message: "lolol",
-		Time:    "i dag",
+		User:    message.User,
+		Message: message.Message,
+		Time:    message.Time,
 	}
-
-	fmt.Println("Set up message")
 
 	//send message to every known stream
 	for i := range sliceOfStreams {
 
-		mutex.Lock()
+		//mutex.Lock()
 
 		sliceOfStreams[i].Send(&broadcastReply)
+		//fmt.Println(sliceOfStreams[i].Context())
 
-		mutex.Unlock()
-
-		fmt.Println(sliceOfStreams[i])
+		//mutex.Unlock()
 
 		fmt.Println("Sending message to user", i)
 	}

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"math/rand"
 
@@ -28,17 +29,9 @@ func main() {
 	client := chittychat.NewChittyChatClient(conn)
 
 	//
-	clientMessage := chittychat.BroadcastRequest{
-		UserId: rand.Int31n(10000),
-	}
-
-	stream, err := client.Broadcast(context.Background(), &clientMessage)
-	if err != nil {
-		log.Fatalf("open stream error %v", err)
-	}
 
 	//read from server
-	go PrintBroadcasts(client, stream)
+	go PrintBroadcasts(client)
 
 	for {
 		t.Sleep(3 * t.Second)
@@ -51,27 +44,42 @@ func PublishToServer(client chittychat.ChittyChatClient) {
 	message := chittychat.PublishRequest{
 		User:    "Bo",
 		Message: "Hej med dig",
-		Time:    t.Now().GoString(),
+		Time:    t.Now().Format("2006-01-02 15:04:05"),
 	}
 
 	client.Publish(context.Background(), &message)
 }
 
-func PrintBroadcasts(client chittychat.ChittyChatClient, stream chittychat.ChittyChat_BroadcastClient) {
+func PrintBroadcasts(client chittychat.ChittyChatClient) {
+
+	var count int
+
+	clientMessage := chittychat.BroadcastRequest{
+		UserId: rand.Int31n(10000),
+	}
+
+	stream, err := client.Broadcast(context.Background(), &clientMessage)
+	if err != nil {
+		log.Fatalf("Error while opening stream %v", err)
+	}
 
 	for {
-		requestToPrint, err := stream.Recv()
 
-		fmt.Println(requestToPrint)
+		messageToPrint, err := stream.Recv()
 
+		//fmt.Println(requestToPrint)
+
+		if err == io.EOF {
+			break
+		}
 		if err != nil {
-
+			break
 		}
 
-		if requestToPrint != nil {
-			fmt.Println(requestToPrint.User, requestToPrint.Message, requestToPrint.Time)
-		}
+		count++
+		fmt.Println("["+messageToPrint.Time+"]", messageToPrint.User+":", messageToPrint.Message)
 
 		t.Sleep(1 * t.Second)
+		fmt.Println(count)
 	}
 }
