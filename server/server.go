@@ -84,7 +84,7 @@ func (s *Server) Broadcast(in *chittychat.BroadcastRequest, broadcastServer chit
 	//prevent function from terminating
 	//keeps the stream connection alive
 	for {
-
+		t.Sleep(1000 * t.Hour)
 	}
 }
 

@@ -45,7 +45,7 @@ func main() {
 
 	//make sure client doesn't close
 	for {
-
+		t.Sleep(1000 * t.Hour)
 	}
 }
 
