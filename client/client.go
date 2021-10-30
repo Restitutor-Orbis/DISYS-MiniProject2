@@ -1,11 +1,15 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"io"
 	"log"
 	"math/rand"
+	"os"
+	"strconv"
+	"strings"
 
 	"google.golang.org/grpc"
 
@@ -28,31 +32,50 @@ func main() {
 	//  Create new Client from generated gRPC code from proto
 	client := chittychat.NewChittyChatClient(conn)
 
-	//
+	//Read user input in terminal
+	go ReadFromTerminal(client)
 
 	//read from server
-	go PrintBroadcasts(client)
+	go PrintBroadcastsFromServer(client)
 
-	for {
+	/* for {
 		t.Sleep(3 * t.Second)
 		PublishToServer(client)
+	} */
+
+	//make sure client doesn't close
+	for {
+
 	}
 }
 
-func PublishToServer(client chittychat.ChittyChatClient) {
-	// Between the curly brackets are nothing, because the .proto file expects no input.
-	message := chittychat.PublishRequest{
-		User:    "Bo",
-		Message: "Hej med dig",
-		Time:    t.Now().Format("2006-01-02 15:04:05"),
-	}
+func ReadFromTerminal(client chittychat.ChittyChatClient) {
+	for {
+		reader := bufio.NewReader(os.Stdin)
+		clientMessage, err := reader.ReadString('\n')
 
+		if err != nil {
+			log.Fatalf("Failed to read from console")
+		}
+
+		clientMessage = strings.Trim(clientMessage, "\r\n")
+
+		publishRequest := chittychat.PublishRequest{
+			User:    strconv.FormatInt(rand.Int63n(10000), 10),
+			Message: clientMessage,
+			Time:    t.Now().Format("2006-01-02 15:04:05"),
+		}
+
+		PublishToServer(client, publishRequest)
+	}
+}
+
+//call grpc method
+func PublishToServer(client chittychat.ChittyChatClient, message chittychat.PublishRequest) {
 	client.Publish(context.Background(), &message)
 }
 
-func PrintBroadcasts(client chittychat.ChittyChatClient) {
-
-	var count int
+func PrintBroadcastsFromServer(client chittychat.ChittyChatClient) {
 
 	clientMessage := chittychat.BroadcastRequest{
 		UserId: rand.Int31n(10000),
@@ -64,10 +87,7 @@ func PrintBroadcasts(client chittychat.ChittyChatClient) {
 	}
 
 	for {
-
 		messageToPrint, err := stream.Recv()
-
-		//fmt.Println(requestToPrint)
 
 		if err == io.EOF {
 			break
@@ -76,10 +96,6 @@ func PrintBroadcasts(client chittychat.ChittyChatClient) {
 			break
 		}
 
-		count++
 		fmt.Println("["+messageToPrint.Time+"]", messageToPrint.User+":", messageToPrint.Message)
-
-		t.Sleep(1 * t.Second)
-		fmt.Println(count)
 	}
 }

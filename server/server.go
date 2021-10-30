@@ -53,7 +53,13 @@ func (s *Server) Publish(ctx context.Context, in *chittychat.PublishRequest) (*c
 
 	//addClientToMap(in.User)
 
-	BroadcastToAllClients(in)
+	broadcastReply := chittychat.BroadcastReply{
+		User:    in.User,
+		Message: in.Message,
+		Time:    in.Time,
+	}
+
+	BroadcastToAllClients(&broadcastReply)
 
 	return &chittychat.PublishReply{}, nil
 }
@@ -73,7 +79,7 @@ func (s *Server) Broadcast(in *chittychat.BroadcastRequest, broadcastServer chit
 
 	fmt.Println("Added stream to server")
 
-	broadcastServer.Send(&message)
+	BroadcastToAllClients(&message)
 
 	//prevent function from terminating
 	//keeps the stream connection alive
@@ -108,28 +114,14 @@ func StoreClientStream(broadcastServer chittychat.ChittyChat_BroadcastServer) {
 	}
 }
 
-func BroadcastToAllClients(message *chittychat.PublishRequest) {
+func BroadcastToAllClients(message *chittychat.BroadcastReply) {
 
 	//var mutex = &sync.Mutex{}
 
 	fmt.Println("Broadcasting to", len(sliceOfStreams), "people")
 
-	broadcastReply := chittychat.BroadcastReply{
-		User:    message.User,
-		Message: message.Message,
-		Time:    message.Time,
-	}
-
 	//send message to every known stream
-	for i, v := range sliceOfStreams {
-
-		//mutex.Lock()
-
-		v.Send(&broadcastReply)
-		//fmt.Println(sliceOfStreams[i].Context())
-
-		//mutex.Unlock()
-
-		fmt.Println("Sending message to user", i)
+	for _, element := range sliceOfStreams {
+		element.Send(message)
 	}
 }
