@@ -84,11 +84,13 @@ func PublishToServer(client chittychat.ChittyChatClient, message chittychat.Publ
 
 func PrintBroadcastsFromServer(client chittychat.ChittyChatClient) {
 
-	clientMessage := chittychat.BroadcastRequest{
-		UserId: userID,
+	clientMessage := chittychat.SubscribeRequest{
+		Username: username,
 	}
 
-	stream, err := client.Broadcast(context.Background(), &clientMessage)
+	//subscribe to the server
+	//establish server-side streaming
+	stream, err := client.Subscribe(context.Background(), &clientMessage)
 	if err != nil {
 		log.Fatalf("Error while opening stream %v", err)
 	}
@@ -104,5 +106,8 @@ func PrintBroadcastsFromServer(client chittychat.ChittyChatClient) {
 		}
 
 		fmt.Println("["+messageToPrint.Time+"]", messageToPrint.User+":", messageToPrint.Message)
+
+		//check for new messages every second
+		t.Sleep(1 * t.Second)
 	}
 }

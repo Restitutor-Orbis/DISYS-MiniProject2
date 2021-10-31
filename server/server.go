@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"strconv"
 
 	//"sync"
 
@@ -20,7 +19,7 @@ type Server struct {
 	chittychat.UnimplementedChittyChatServer
 }
 
-var sliceOfStreams []chittychat.ChittyChat_BroadcastServer
+var sliceOfStreams []chittychat.ChittyChat_SubscribeServer
 var UserIDtoUsername = make(map[int32]string)
 
 //init new map to track users
@@ -55,7 +54,7 @@ func (s *Server) Publish(ctx context.Context, in *chittychat.PublishRequest) (*c
 
 	//addClientToMap(in.User)
 
-	broadcastReply := chittychat.BroadcastReply{
+	broadcastReply := chittychat.SubscribeReply{
 		User:    in.User,
 		Message: in.Message,
 		Time:    in.Time,
@@ -66,18 +65,18 @@ func (s *Server) Publish(ctx context.Context, in *chittychat.PublishRequest) (*c
 	return &chittychat.PublishReply{}, nil
 }
 
-func (s *Server) Broadcast(in *chittychat.BroadcastRequest, broadcastServer chittychat.ChittyChat_BroadcastServer) error {
-	fmt.Println("Initializing", in.UserId)
+func (s *Server) Subscribe(in *chittychat.SubscribeRequest, subscriptionServer chittychat.ChittyChat_SubscribeServer) error {
+	fmt.Println("Initializing", in.Username)
 
-	message := chittychat.BroadcastReply{
-		User:    strconv.FormatInt(int64(in.UserId), 10),
-		Message: "has joined",
+	message := chittychat.SubscribeReply{
+		User:    in.Username,
+		Message: "has joined the chat",
 		Time:    t.Now().Format("15:04:05"),
 	}
 
 	//save this stream
 	//this should maybe be handled in a separate go routine, to prevent the server from being killed off?
-	sliceOfStreams = append(sliceOfStreams, broadcastServer)
+	sliceOfStreams = append(sliceOfStreams, subscriptionServer)
 
 	fmt.Println("Added stream to server")
 
@@ -87,8 +86,8 @@ func (s *Server) Broadcast(in *chittychat.BroadcastRequest, broadcastServer chit
 	//keeps the stream connection alive
 	for {
 		select {
-		case <-broadcastServer.Context().Done():
-			broadcastReply := chittychat.BroadcastReply{
+		case <-subscriptionServer.Context().Done():
+			broadcastReply := chittychat.SubscribeReply{
 				User:    message.User,
 				Message: "has left the chat",
 				Time:    message.Time,
@@ -97,18 +96,17 @@ func (s *Server) Broadcast(in *chittychat.BroadcastRequest, broadcastServer chit
 			BroadcastToAllClients(&broadcastReply)
 
 			/* for _, element := range sliceOfStreams {
-				if element == broadcastServer {
+				if element == subscriptionServer {
 					element = nil
 				}
 			} */
 
 			return nil
-			//element = nil
 		}
 	}
 }
 
-func BroadcastToAllClients(message *chittychat.BroadcastReply) {
+func BroadcastToAllClients(message *chittychat.SubscribeReply) {
 	//send message to every known stream
 	for _, element := range sliceOfStreams {
 		if element != nil {
