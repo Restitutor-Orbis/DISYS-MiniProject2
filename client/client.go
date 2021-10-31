@@ -8,7 +8,6 @@ import (
 	"log"
 	"math/rand"
 	"os"
-	"strconv"
 	"strings"
 
 	"google.golang.org/grpc"
@@ -17,6 +16,9 @@ import (
 
 	"github.com/Restitutor-Orbis/DISYS-MiniProject2/chittychat"
 )
+
+var username string
+var userID int32 = rand.Int31n(10000)
 
 func main() {
 	// Creat a virtual RPC Client Connection on port  9080 WithInsecure (because  of http)
@@ -32,18 +34,23 @@ func main() {
 	//  Create new Client from generated gRPC code from proto
 	client := chittychat.NewChittyChatClient(conn)
 
+	fmt.Println("Type in your username")
+
+	reader := bufio.NewReader(os.Stdin)
+	clientMessage, err := reader.ReadString('\n')
+
+	if err != nil {
+		log.Fatalf("Failed to read from console")
+	}
+
+	username = strings.Trim(clientMessage, "\r\n")
+
 	//Read user input in terminal
 	go ReadFromTerminal(client)
 
 	//read from server
 	go PrintBroadcastsFromServer(client)
 
-	/* for {
-		t.Sleep(3 * t.Second)
-		PublishToServer(client)
-	} */
-
-	//make sure client doesn't close
 	for {
 		t.Sleep(1000 * t.Hour)
 	}
@@ -61,7 +68,7 @@ func ReadFromTerminal(client chittychat.ChittyChatClient) {
 		clientMessage = strings.Trim(clientMessage, "\r\n")
 
 		publishRequest := chittychat.PublishRequest{
-			User:    strconv.FormatInt(rand.Int63n(10000), 10),
+			User:    username, //strconv.FormatInt(rand.Int63n(10000), 10),
 			Message: clientMessage,
 			Time:    t.Now().Format("2006-01-02 15:04:05"),
 		}
@@ -78,7 +85,7 @@ func PublishToServer(client chittychat.ChittyChatClient, message chittychat.Publ
 func PrintBroadcastsFromServer(client chittychat.ChittyChatClient) {
 
 	clientMessage := chittychat.BroadcastRequest{
-		UserId: rand.Int31n(10000),
+		UserId: userID,
 	}
 
 	stream, err := client.Broadcast(context.Background(), &clientMessage)

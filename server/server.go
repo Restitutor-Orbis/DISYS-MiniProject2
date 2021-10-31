@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"strconv"
 
 	//"sync"
 
@@ -20,6 +21,7 @@ type Server struct {
 }
 
 var sliceOfStreams []chittychat.ChittyChat_BroadcastServer
+var UserIDtoUsername = make(map[int32]string)
 
 //init new map to track users
 //var userIDtoNameMap map[int]string = make(map[int]string)
@@ -28,13 +30,13 @@ func main() {
 	// Create listener tcp on port 9080
 	list, err := net.Listen("tcp", ":9081")
 	if err != nil {
-		log.Fatalf("Failed to listen on port 9080: %v", err)
+		log.Fatalf("Failed to listen on port 9081: %v", err)
 	}
 
 	grpcServer := grpc.NewServer()
 	chittychat.RegisterChittyChatServer(grpcServer, &Server{})
 
-	fmt.Println("Server is set up on port 9080")
+	fmt.Println("Server is set up on port 9081")
 
 	if err := grpcServer.Serve(list); err != nil {
 		log.Fatalf("failed to server %v", err)
@@ -68,7 +70,7 @@ func (s *Server) Broadcast(in *chittychat.BroadcastRequest, broadcastServer chit
 	fmt.Println("Initializing", in.UserId)
 
 	message := chittychat.BroadcastReply{
-		User:    "Bo",
+		User:    strconv.FormatInt(int64(in.UserId), 10),
 		Message: "has joined",
 		Time:    t.Now().Format("15:04:05"),
 	}
@@ -84,44 +86,33 @@ func (s *Server) Broadcast(in *chittychat.BroadcastRequest, broadcastServer chit
 	//prevent function from terminating
 	//keeps the stream connection alive
 	for {
-		t.Sleep(1000 * t.Hour)
-	}
-}
+		select {
+		case <-broadcastServer.Context().Done():
+			broadcastReply := chittychat.BroadcastReply{
+				User:    message.User,
+				Message: "has left the chat",
+				Time:    message.Time,
+			}
 
-func StoreClientStream(broadcastServer chittychat.ChittyChat_BroadcastServer) {
-	sliceOfStreams = append(sliceOfStreams, broadcastServer)
+			BroadcastToAllClients(&broadcastReply)
 
-	fmt.Println("Added", broadcastServer, "to slice")
+			/* for _, element := range sliceOfStreams {
+				if element == broadcastServer {
+					element = nil
+				}
+			} */
 
-	broadcastReply := chittychat.BroadcastReply{
-		User:    "Jens",
-		Message: "Sendt fra StoreClientStream",
-		Time:    t.Now().Format("15:04:05"),
-	}
-
-	//broadcastServer.Send(&broadcastReply)
-
-	for i, v := range sliceOfStreams {
-
-		//mutex.Lock()
-
-		sliceOfStreams[i].Send(&broadcastReply)
-		//fmt.Println(sliceOfStreams[i].Context())
-
-		//mutex.Unlock()
-
-		fmt.Println(i, v)
+			return nil
+			//element = nil
+		}
 	}
 }
 
 func BroadcastToAllClients(message *chittychat.BroadcastReply) {
-
-	//var mutex = &sync.Mutex{}
-
-	fmt.Println("Broadcasting to", len(sliceOfStreams), "people")
-
 	//send message to every known stream
 	for _, element := range sliceOfStreams {
-		element.Send(message)
+		if element != nil {
+			element.Send(message)
+		}
 	}
 }
