@@ -6,7 +6,7 @@ Setup server:
 Go into server directory: go run .
 
 Create client:
-Go into client directory: go run.
+Go into client directory: go run .
 Do this for as many clients you want in the chat
 
 ## Log
