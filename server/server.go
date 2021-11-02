@@ -2,13 +2,9 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net"
-
-	//"sync"
-
-	t "time"
+	"strconv"
 
 	chittychat "github.com/Restitutor-Orbis/DISYS-MiniProject2/chittychat"
 
@@ -19,45 +15,49 @@ type Server struct {
 	chittychat.UnimplementedChittyChatServer
 }
 
+//slice of all known connections
 var sliceOfStreams []chittychat.ChittyChat_SubscribeServer
-var UserIDtoUsername = make(map[int32]string)
 
-//init new map to track users
-//var userIDtoNameMap map[int]string = make(map[int]string)
+//server's lamport time
+//init to 0
+var lamportTime = chittychat.LamportTime{
+	Time: 0,
+}
 
 func main() {
 	// Create listener tcp on port 9080
 	list, err := net.Listen("tcp", ":9081")
 	if err != nil {
-		log.Fatalf("Failed to listen on port 9081: %v", err)
+		log.Fatalf(GetTimeAsString(), "Failed to listen on port 9081: %v", err)
 	}
 
 	grpcServer := grpc.NewServer()
 	chittychat.RegisterChittyChatServer(grpcServer, &Server{})
 
-	fmt.Println("Server is set up on port 9081")
+	log.Println(GetTimeAsString(), "Server is set up on port 9081")
 
 	if err := grpcServer.Serve(list); err != nil {
-		log.Fatalf("failed to server %v", err)
+		log.Fatalf(GetTimeAsString(), "failed to server %v", err)
 	}
 
 	//grpc listen and serve
 	err = grpcServer.Serve(list)
 	if err != nil {
-		log.Fatalf("Failed to start gRPC Server :: %v", err)
+		log.Fatalf(GetTimeAsString(), "Failed to start gRPC Server :: %v", err)
 	}
 }
 
 func (s *Server) Publish(ctx context.Context, in *chittychat.PublishRequest) (*chittychat.PublishReply, error) {
+	//increment lamport time
+	lamportTime.UpdateTime(in.Time)
+	lamportTime.Time++
 
-	fmt.Println("Received PublishRequest from", in.User)
-
-	//addClientToMap(in.User)
+	log.Println(GetTimeAsString(), "Received PublishRequest from", in.User)
 
 	broadcastReply := chittychat.SubscribeReply{
 		User:    in.User,
 		Message: in.Message,
-		Time:    in.Time,
+		Time:    lamportTime.Time,
 	}
 
 	BroadcastToAllClients(&broadcastReply)
@@ -66,19 +66,22 @@ func (s *Server) Publish(ctx context.Context, in *chittychat.PublishRequest) (*c
 }
 
 func (s *Server) Subscribe(in *chittychat.SubscribeRequest, subscriptionServer chittychat.ChittyChat_SubscribeServer) error {
-	fmt.Println("Initializing", in.Username)
+
+	//increment lamport time
+	lamportTime.UpdateTime(in.Time)
+	lamportTime.Time++
 
 	message := chittychat.SubscribeReply{
 		User:    in.Username,
 		Message: "has joined the chat",
-		Time:    t.Now().Format("15:04:05"),
+		Time:    lamportTime.Time,
 	}
 
 	//save this stream
 	//this should maybe be handled in a separate go routine, to prevent the server from being killed off?
 	sliceOfStreams = append(sliceOfStreams, subscriptionServer)
 
-	fmt.Println("Added stream to server")
+	log.Println(GetTimeAsString(), "Added new client stream to server")
 
 	BroadcastToAllClients(&message)
 
@@ -92,6 +95,8 @@ func (s *Server) Subscribe(in *chittychat.SubscribeRequest, subscriptionServer c
 				Message: "has left the chat",
 				Time:    message.Time,
 			}
+
+			log.Println(GetTimeAsString(), message.User+" has disconnected")
 
 			BroadcastToAllClients(&broadcastReply)
 
@@ -107,10 +112,22 @@ func (s *Server) Subscribe(in *chittychat.SubscribeRequest, subscriptionServer c
 }
 
 func BroadcastToAllClients(message *chittychat.SubscribeReply) {
+
+	//increment lamport time
+	lamportTime.Time++
+	message.Time = lamportTime.Time
+
 	//send message to every known stream
 	for _, element := range sliceOfStreams {
 		if element != nil {
+			log.Println(GetTimeAsString(), "Broadcasting to client")
 			element.Send(message)
 		}
 	}
+}
+
+//doesn't require lamport increment
+func GetTimeAsString() string {
+	timeToString := strconv.FormatInt(int64(lamportTime.Time), 10)
+	return "[" + timeToString + "]"
 }

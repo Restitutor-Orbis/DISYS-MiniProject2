@@ -12,17 +12,18 @@ service ChittyChat {
 message PublishRequest {
     string user = 1;
     string message = 2;
-    string time = 3;
+    int32 time = 3;
 }
 
 message PublishReply {}
 
 message SubscribeRequest {
     string username = 1;
+    int32 time = 2;
 }
 
 message SubscribeReply {
     string user = 1;
     string message = 2;
-    string time = 3;
+    int32 time = 3;
 }

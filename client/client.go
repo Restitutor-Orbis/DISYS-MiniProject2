@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"math/rand"
 	"os"
+	"strconv"
 	"strings"
 
 	"google.golang.org/grpc"
@@ -18,7 +18,11 @@ import (
 )
 
 var username string
-var userID int32 = rand.Int31n(10000)
+
+//client's lamport time
+var lamportTime = chittychat.LamportTime{
+	Time: 0,
+}
 
 func main() {
 	// Creat a virtual RPC Client Connection on port  9080 WithInsecure (because  of http)
@@ -68,9 +72,9 @@ func ReadFromTerminal(client chittychat.ChittyChatClient) {
 		clientMessage = strings.Trim(clientMessage, "\r\n")
 
 		publishRequest := chittychat.PublishRequest{
-			User:    username, //strconv.FormatInt(rand.Int63n(10000), 10),
+			User:    username,
 			Message: clientMessage,
-			Time:    t.Now().Format("2006-01-02 15:04:05"),
+			Time:    lamportTime.Time,
 		}
 
 		PublishToServer(client, publishRequest)
@@ -79,13 +83,21 @@ func ReadFromTerminal(client chittychat.ChittyChatClient) {
 
 //call grpc method
 func PublishToServer(client chittychat.ChittyChatClient, message chittychat.PublishRequest) {
+	//increment lamport
+	lamportTime.Time++
+	message.Time = lamportTime.Time
+
 	client.Publish(context.Background(), &message)
 }
 
 func PrintBroadcastsFromServer(client chittychat.ChittyChatClient) {
 
+	//increment lamport
+	lamportTime.Time++
+
 	clientMessage := chittychat.SubscribeRequest{
 		Username: username,
+		Time:     lamportTime.Time,
 	}
 
 	//subscribe to the server
@@ -105,9 +117,11 @@ func PrintBroadcastsFromServer(client chittychat.ChittyChatClient) {
 			break
 		}
 
-		fmt.Println("["+messageToPrint.Time+"]", messageToPrint.User+":", messageToPrint.Message)
+		lamportTime.UpdateTime(messageToPrint.Time)
+		lamportTime.Time++
 
-		//check for new messages every second
-		t.Sleep(1 * t.Second)
+		timeToString := strconv.FormatInt(int64(lamportTime.Time), 10)
+
+		fmt.Println("["+timeToString+"]", messageToPrint.User+":", messageToPrint.Message)
 	}
 }
