@@ -66,7 +66,9 @@ func main() {
 func (s *Server) Publish(ctx context.Context, in *chittychat.PublishRequest) (*chittychat.PublishReply, error) {
 	//increment lamport time
 	lamportTime.UpdateTime(in.Time)
+	lamportTime.Mutex.Lock()
 	lamportTime.Time++
+	lamportTime.Mutex.Unlock()
 
 	log.Println(GetTimeAsString(), "Received PublishRequest from", in.User)
 
@@ -84,8 +86,11 @@ func (s *Server) Publish(ctx context.Context, in *chittychat.PublishRequest) (*c
 func (s *Server) Subscribe(in *chittychat.SubscribeRequest, subscriptionServer chittychat.ChittyChat_SubscribeServer) error {
 
 	//increment lamport time
+	//update against client lamport time
 	lamportTime.UpdateTime(in.Time)
+	lamportTime.Mutex.Lock()
 	lamportTime.Time++
+	lamportTime.Mutex.Unlock()
 
 	message := chittychat.SubscribeReply{
 		User:    in.Username,
@@ -106,10 +111,16 @@ func (s *Server) Subscribe(in *chittychat.SubscribeRequest, subscriptionServer c
 	for {
 		select {
 		case <-subscriptionServer.Context().Done():
+
+			//increment time as "recieved" message from client that it disconnected
+			lamportTime.Mutex.Lock()
+			lamportTime.Time++
+			lamportTime.Mutex.Unlock()
+
 			broadcastReply := chittychat.SubscribeReply{
 				User:    message.User,
 				Message: "has left the chat",
-				Time:    message.Time,
+				Time:    lamportTime.Time,
 			}
 
 			log.Println(GetTimeAsString(), message.User+" has disconnected")
@@ -130,7 +141,9 @@ func (s *Server) Subscribe(in *chittychat.SubscribeRequest, subscriptionServer c
 func BroadcastToAllClients(message *chittychat.SubscribeReply) {
 
 	//increment lamport time
+	lamportTime.Mutex.Lock()
 	lamportTime.Time++
+	lamportTime.Mutex.Unlock()
 	message.Time = lamportTime.Time
 	log.Println(GetTimeAsString(), "Broadcasting to all clients")
 
