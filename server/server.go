@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net"
+	"os"
 	"strconv"
 
 	chittychat "github.com/Restitutor-Orbis/DISYS-MiniProject2/chittychat"
@@ -25,6 +26,21 @@ var lamportTime = chittychat.LamportTime{
 }
 
 func main() {
+
+	//log to file, taken from https://dev.to/gholami1313/saving-log-messages-to-a-custom-log-file-in-golang-ce5
+	LOG_FILE := "log.txt"
+
+	logFile, err := os.OpenFile(LOG_FILE, os.O_APPEND|os.O_RDWR|os.O_CREATE, 0644)
+	if err != nil {
+		log.Panic(GetTimeAsString(), err)
+	}
+	defer logFile.Close()
+	log.SetOutput(logFile)
+
+	log.Println("-----------------------------------")
+
+	log.Println(GetTimeAsString(), "Logging to custom file")
+
 	// Create listener tcp on port 9080
 	list, err := net.Listen("tcp", ":9081")
 	if err != nil {
@@ -116,11 +132,11 @@ func BroadcastToAllClients(message *chittychat.SubscribeReply) {
 	//increment lamport time
 	lamportTime.Time++
 	message.Time = lamportTime.Time
+	log.Println(GetTimeAsString(), "Broadcasting to all clients")
 
 	//send message to every known stream
 	for _, element := range sliceOfStreams {
 		if element != nil {
-			log.Println(GetTimeAsString(), "Broadcasting to client")
 			element.Send(message)
 		}
 	}
