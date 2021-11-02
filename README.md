@@ -1,4 +1,18 @@
 # DISYS-MiniProject2
 
-guide: https://www.freecodecamp.org/news/grpc-server-side-streaming-with-go/
-       https://levelup.gitconnected.com/grpc-how-to-make-server-streaming-calls-763b42895481
+## To run
+
+Setup server:
+Go into server directory: go run .
+
+Create client:
+Go into client directory: go run.
+Do this for as many clients you want in the chat
+
+## Log
+
+The server logs all messages to server/log.txt
+
+## Lamport
+
+Lamport code can be found in ChittyChat/LamportTime.go
